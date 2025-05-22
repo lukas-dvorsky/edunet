@@ -1,0 +1,220 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Image {
+  id     String  @id @default(uuid())
+  path   String  @unique
+  Post   Post?   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId String?
+
+  @@index([postId])
+}
+
+model Post {
+  id        String   @id @default(uuid())
+  title     String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  //type      PostType @default(Private)
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tag    Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  userId String
+  tagId  String  @unique
+  images Image[]
+
+  wallId String
+  Wall   Wall   @relation(fields: [wallId], references: [id])
+
+  @@index([userId])
+  @@index([tagId])
+  @@index([wallId])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  parent    Tag      @relation("parent", fields: [parentTag], references: [id], onDelete: Cascade)
+  userId    String
+  tagId     String   @unique
+  parentTag String
+  nestIndex Int
+
+  @@index([userId])
+  @@index([id])
+  @@index([parentTag])
+}
+
+model Like {
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId  String
+  userId String
+
+  @@id([userId, tagId])
+  @@unique([userId, tagId])
+  @@index([tagId])
+  @@index([userId])
+}
+
+model Wall {
+  //user User @relation("owner",fields: [userId], references: [id])
+  //userId String
+  id    String @id @default(uuid())
+  Post  Post[]
+  User  User?
+  Group Group?
+}
+
+//model WallPost {
+//  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+//  wall   Wall   @relation(fields: [wallId], references: [id], onDelete: Cascade)
+//  wallId String
+//  postId String
+//
+//  @@id([wallId, postId])
+//  @@index([wallId])
+//  @@index([postId])
+//}
+
+model Tag {
+  id           String    @id @default(uuid())
+  Post         Post?
+  Comment      Comment?
+  like         Like[]
+  ComentParent Comment[] @relation("parent")
+}
+
+model User {
+  id             String          @id @default(cuid())
+  fname          String
+  lname          String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  email          String          @unique
+  changePassword Boolean         @default(true)
+  password       String
+  role           Role            @default(Student)
+  profilePicture String          @default("defaultuser.png")
+  specialization Specialization?
+  group          String
+  accounts       Account[]
+  sessions       Session[]
+  posts          Post[]
+  Comment        Comment[]
+  IsBanned       BannedUsers? @relation("user")
+  HasBanned      BannedUsers[] @relation("admin")
+  Like           Like[]
+  Following      Followers[]     @relation("following")
+  Followers      Followers[]     @relation("follower")
+  wallId         String          @unique
+  Wall           Wall            @relation(fields: [wallId], references: [id])
+}
+
+model Followers {
+  userId       String @unique
+  user         User   @relation("following", fields: [userId], references: [id], onDelete: Cascade)
+  followedById String @unique
+  followedBy   User   @relation("follower", fields: [followedById], references: [id], onDelete: Cascade)
+
+  @@id([followedById, userId])
+  @@unique([userId, followedById])
+  @@index([followedById])
+  @@index([userId])
+}
+
+model Group {
+  id        String @id @default(cuid())
+  groupName String @unique
+  wallId    String @unique
+  Wall      Wall   @relation(fields: [wallId], references: [id])
+}
+
+model BannedUsers {
+  id     String @id @default(cuid())
+  userId String @unique
+  bannedBy String 
+  reason String
+  user   User   @relation("user", fields: [userId], references: [id])
+  adminId User @relation("admin", fields: [bannedBy], references: [id])
+  
+
+  @@index([bannedBy])
+}
+
+enum Specialization {
+  INFORMACNITECHNOLOGIE
+  STROJIRENSTVI
+  AUTOMOBILOVYPRUMYSL
+  AUTOELEKTROTECHNIKA
+  OBCHODNIAKADEMIE
+}
+
+enum Role {
+  Student
+  Teacher
+  Admin
+}
+
+enum Groups {
+  rocnik1
+  rocnik2
+  rocnik3
+  rocnik4
+  zamestnanci
+}
+
+//enum PostType {
+//  Users //visible for anyone on users page
+//  Private //only followers on users page
+//  Public //all posts
+//}
