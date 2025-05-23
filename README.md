@@ -1,21 +1,3 @@
-# spsoasocialmedia
+EDUNET
 
-# PAGES
-
-Login page
-Main wall page
-Public wall page
-User profile
-
-IsLogedIn ? show login page : show main page
-
-# LOGIN PAGE
-
-Login through email only
-
-Wrong password
-Wrong email
-
-# MAIN WALL
-
-Wall post
+📄 [Klikněte zde pro otevření dokumentace (PDF)](SPSaOA-gd4-2024-dvorsky-skolni-socialni-sit-text_prace.pdf)
